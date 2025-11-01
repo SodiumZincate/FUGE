@@ -3,22 +3,9 @@
 #include <cmath>
 #include <iostream>
 #include "particle.h"
+#include "pfgen.h"
 
-Particle projectile;
-bool fired = false;
 float timeSinceStart = 0.0f;
-
-void fire() {
-    projectile.setMass(800.0f);
-    projectile.setPosition(Vector3(0.0f, 1.5f, -100.0f));
-    projectile.setVelocity(Vector3(0.0f, 0.0f, 0.0f));
-    projectile.setAcceleration(Vector3(0.0f, -9.81f, 0.0f));
-    projectile.setDamping(0.95f);
-    timeSinceStart = 0.0f;
-
-    std::cout << "initial time = " << timeSinceStart << std::endl;
-    std::cout << "position = " << projectile.position.x << " " << projectile.position.y << " " << projectile.position.z << std::endl;
-}
 
 // Draw a cube (unchanged)
 void drawCube(float x, float y, float z) {
@@ -70,7 +57,7 @@ int main() {
         mode->width, 
         mode->height, 
         "Ballistics Cube Demo", 
-        primary,    // pass monitor for fullscreen
+        nullptr,
         nullptr
     );
 
@@ -83,58 +70,102 @@ int main() {
     glLoadIdentity();
     float aspect = 800.0f / 600.0f;
     float proj[16], view[16];
-    perspective(45.0f, aspect, 0.1f, 100.0f, proj);
-    lookAt(Vector3(-20, 10, 20), Vector3(0,0,0), Vector3(0,1,0), view);
+    perspective(90.0f, aspect, 0.1f, 300.0f, proj);
+    lookAt(Vector3(-25, 10, -25), Vector3(0.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0), view);
     glLoadMatrixf(proj);
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf(view);
+
+
+    Particle projectile1, projectile2;
+    projectile1.setPosition(Vector3(0,0,-10.0f));
+    projectile1.setMass(6.0f);
+    projectile1.setDamping(0.99f);
+    projectile1.clearAccumulator();
+    
+    projectile2.setPosition(Vector3(0,0,10.0f));
+    projectile2.setMass(6.0f);
+    projectile2.setDamping(0.99f);
+    projectile2.clearAccumulator();
+
+    Vector3 anchor1(0,0,-25.0f);
+    Vector3 anchor2(0,0,25.0f);
+
+    ParticleGravity gravity(Vector3(0,-9.81f,0));
+    ParticleDrag drag(0.1f, 0.02f);
+    ParticleAnchoredSpring anchoredSpring1(&anchor1, 1.0f, 25.0f);
+    ParticleAnchoredSpring anchoredSpring2(&anchor2, 1.0f, 25.0f);
+    ParticleBungee bungee(&projectile1, &projectile2, 1.0f, 7.5f);
+    ParticleBuoyancy buoyancy(-10.0f, 1000.0f);
+
+    ParticleForceRegistry registry;
+    registry.add(&projectile1, &gravity);
+    registry.add(&projectile2, &gravity);
+
+    registry.add(&projectile1, &drag);
+    registry.add(&projectile2, &drag);
+    registry.add(&projectile1, &bungee);
+
+    registry.add(&projectile1, &anchoredSpring1);
+    registry.add(&projectile2, &anchoredSpring2);
+
+    registry.add(&projectile1, &buoyancy);
+    registry.add(&projectile2, &buoyancy);
 
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if(glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
-            fire();
+            projectile1.setPosition(Vector3(0,0,-10));
+            projectile2.setPosition(Vector3(0,0,10));
+            projectile1.clearAccumulator();
+            projectile2.clearAccumulator();
         }
-
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-            projectile.addForce(Vector3(0.0f, 40.0f, 0.0f));
-            std::cout << "position = " << projectile.position.y << " " << projectile.position.z << std::endl; 
-            std::cout << "velocity = " << projectile.velocity.x << " " << projectile.velocity.y << " " << projectile.velocity.z << std::endl; 
-            std::cout << "acceleration = " << projectile.acceleration.x << " " << projectile.acceleration.y << " " << projectile.acceleration.z << std::endl;
-        }
-        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            projectile.addForce(Vector3(20.0f, 0.0f, 20.0f));
-            std::cout << "position = " << projectile.position.y << " " << projectile.position.z << std::endl; 
-            std::cout << "velocity = " << projectile.velocity.x << " " << projectile.velocity.y << " " << projectile.velocity.z << std::endl; 
-            std::cout << "acceleration = " << projectile.acceleration.x << " " << projectile.acceleration.y << " " << projectile.acceleration.z << std::endl;
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            projectile.addForce(Vector3(-20.0f, 0.0f, -20.0f));
-            std::cout << "position = " << projectile.position.y << " " << projectile.position.z << std::endl; 
-            std::cout << "velocity = " << projectile.velocity.x << " " << projectile.velocity.y << " " << projectile.velocity.z << std::endl; 
-            std::cout << "acceleration = " << projectile.acceleration.x << " " << projectile.acceleration.y << " " << projectile.acceleration.z << std::endl;
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-            projectile.addForce(Vector3(0.0f, -20.0f, 0.0f));
-            std::cout << "position = " << projectile.position.y << " " << projectile.position.z << std::endl; 
-            std::cout << "velocity = " << projectile.velocity.x << " " << projectile.velocity.y << " " << projectile.velocity.z << std::endl; 
-            std::cout << "acceleration = " << projectile.acceleration.x << " " << projectile.acceleration.y << " " << projectile.acceleration.z << std::endl;
-        }
-
-        std::cout << "mass=" << projectile.mass
-          << " invMass=" << projectile.inverseMass
-          << " forceAccum=" << projectile.forceAccum.x << "," << projectile.forceAccum.y << "," << projectile.forceAccum.z
-          << " acceleration(base)=" << projectile.acceleration.x << "," << projectile.acceleration.y << "," << projectile.acceleration.z
-          << std::endl;
-
 
         float dt = 0.016f; // ~60 FPS
-        projectile.integrate(dt);
+        registry.updateForces(dt);
+
+        projectile1.integrate(dt);
+        projectile2.integrate(dt);
+
+        // Draw the spring anchor
+        glColor3f(1.0f, 0.2f, 0.2f);
+        drawCube(anchor1.x, anchor1.y, anchor1.z);
+        drawCube(anchor2.x, anchor2.y, anchor2.z);
+
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glBegin(GL_LINES);
+        glVertex3f(0.0f, 0.0f, 300.0f);
+        glVertex3f(0.0f, 0.0f, -300.0f);
+
+        glVertex3f(0.0f, 300.0f, 0.0f);
+        glVertex3f(0.0f, -300.0f, 0.0);
+
+        glVertex3f(300.0f, 0.0f, 0.0f);
+        glVertex3f(-300.0f, 0.0f, 0.0f);
+
+        glVertex3f(0.0f, -10.0f, 300.0f);
+        glVertex3f(0.0f, -10.0f, -300.0f);
+
+        glVertex3f(300.0f, -10.0f, 0.0f);
+        glVertex3f(-300.0f, -10.0f, 0.0f);
+
+        glColor3f(0.8f, 0.8f, 0.2f);
+        glVertex3f(anchor1.x,anchor1.y,anchor1.z);
+        glVertex3f(projectile1.position.x, projectile1.position.y, projectile1.position.z);
+
+        glVertex3f(projectile1.position.x, projectile1.position.y, projectile1.position.z);
+        glVertex3f(projectile2.position.x, projectile2.position.y, projectile2.position.z);
+
+        glVertex3f(projectile2.position.x, projectile2.position.y, projectile2.position.z);
+        glVertex3f(anchor2.x,anchor2.y,anchor2.z);
+        glEnd();
 
         glColor3f(0.5f, 0.6f, 0.2f);
-        drawCube(projectile.position.x, projectile.position.y, projectile.position.z);
+        drawCube(projectile1.position.x, projectile1.position.y, projectile1.position.z);
+
+        glColor3f(0.5f, 0.6f, 0.2f);
+        drawCube(projectile2.position.x, projectile2.position.y, projectile2.position.z);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
