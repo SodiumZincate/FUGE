@@ -116,8 +116,8 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if(glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS){
-            projectile1.setPosition(Vector3(0,0,-10));
-            projectile2.setPosition(Vector3(0,0,10));
+            projectile1.setPosition(Vector3(0,200,-10));
+            projectile2.setPosition(Vector3(0,200,10));
             projectile1.clearAccumulator();
             projectile2.clearAccumulator();
         }

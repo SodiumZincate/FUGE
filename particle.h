@@ -20,6 +20,7 @@ class Particle{
         void addForce(const Vector3 &force);
         void setMass(const real mass);
         real getMass();
+        real getInverseMass();
         bool hasFiniteMass();
         void setVolume(const real volume);
         void setPosition(const Vector3 &v);

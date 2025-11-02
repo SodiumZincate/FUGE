@@ -14,9 +14,18 @@ void Particle::integrate(real duration){
     velocity.addScaledVector(resultingAcc, duration);
     velocity*=real_pow(damping, duration);
 
-    // std::cout << "position = " << position.y << " " << position.z << std::endl; 
-    // std::cout << "velocity = " << velocity.x << " " << velocity.y << " " << velocity.z << std::endl; 
-    // std::cout << "acceleration = " <<resultingAcc.x << " " <<resultingAcc.y << " " << resultingAcc.z << std::endl;
+    real kineticEnergy = 0.5f*mass*velocity.magnitude()*velocity.magnitude();
+    real potentialEnergy = mass*9.81f*position.y;
+    real totalEnergy = kineticEnergy + potentialEnergy; 
+
+    if(position.y>0){
+    std::cout << "Kinetic Energy = " << kineticEnergy << std::endl;
+    std::cout << "Potential Energy = " << potentialEnergy << std::endl;
+    std::cout << "Total Energy = " << totalEnergy << std::endl;
+    std::cout << "position = " << position.y << " " << position.z << std::endl; 
+    std::cout << "velocity = " << velocity.x << " " << velocity.y << " " << velocity.z << std::endl; 
+    std::cout << "acceleration = " <<resultingAcc.x << " " <<resultingAcc.y << " " << resultingAcc.z << std::endl;
+    }
 
     clearAccumulator();
 }
@@ -28,6 +37,10 @@ void Particle::setMass(const real m){
 
 real Particle::getMass(){
     return mass;
+}
+
+real Particle::getInverseMass(){
+    return inverseMass;
 }
 
 bool Particle::hasFiniteMass(){
