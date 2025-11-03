@@ -1,6 +1,7 @@
 #pragma once
 #include "precision.h"
 #include "core.h"
+#include "pworld.h"
 
 class ParticleContact{
     public:
@@ -27,4 +28,9 @@ class ParticleContactResolver
         ParticleContactResolver(unsigned iterations);
         void setIterations(unsigned iterations);
         void resolveContacts(ParticleContact *contactArray, unsigned numContacts, real duration);
+};
+
+class ParticleContactGenerator{
+    public:
+        virutal unsigned addContact(ParticleContact *contact, unsigned limit) const = 0;
 };
