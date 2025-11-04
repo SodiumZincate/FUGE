@@ -14,18 +14,18 @@ void drawCube(float x, float y, float z) {
     glPushMatrix();
     glTranslatef(x, y, z);
     glBegin(GL_QUADS);
-    glVertex3f(-0.2f, -0.2f, 0.2f); glVertex3f(0.2f, -0.2f, 0.2f);
-    glVertex3f(0.2f, 0.2f, 0.2f);   glVertex3f(-0.2f, 0.2f, 0.2f);
-    glVertex3f(-0.2f, -0.2f, -0.2f); glVertex3f(-0.2f, 0.2f, -0.2f);
-    glVertex3f(0.2f, 0.2f, -0.2f);   glVertex3f(0.2f, -0.2f, -0.2f);
-    glVertex3f(-0.2f, -0.2f, -0.2f); glVertex3f(-0.2f, -0.2f, 0.2f);
-    glVertex3f(-0.2f, 0.2f, 0.2f);   glVertex3f(-0.2f, 0.2f, -0.2f);
-    glVertex3f(0.2f, -0.2f, -0.2f); glVertex3f(0.2f, 0.2f, -0.2f);
-    glVertex3f(0.2f, 0.2f, 0.2f);   glVertex3f(0.2f, -0.2f, 0.2f);
-    glVertex3f(-0.2f, 0.2f, -0.2f); glVertex3f(-0.2f, 0.2f, 0.2f);
-    glVertex3f(0.2f, 0.2f, 0.2f);   glVertex3f(0.2f, 0.2f, -0.2f);
-    glVertex3f(-0.2f, -0.2f, -0.2f); glVertex3f(0.2f, -0.2f, -0.2f);
-    glVertex3f(0.2f, -0.2f, 0.2f);   glVertex3f(-0.2f, -0.2f, 0.2f);
+    glVertex3f(-0.5f, -0.5f, 0.5f); glVertex3f(0.5f, -0.5f, 0.5f);
+    glVertex3f(0.5f, 0.5f, 0.5f);   glVertex3f(-0.5f, 0.5f, 0.5f);
+    glVertex3f(-0.5f, -0.5f, -0.5f); glVertex3f(-0.5f, 0.5f, -0.5f);
+    glVertex3f(0.5f, 0.5f, -0.5f);   glVertex3f(0.5f, -0.5f, -0.5f);
+    glVertex3f(-0.5f, -0.5f, -0.5f); glVertex3f(-0.5f, -0.5f, 0.5f);
+    glVertex3f(-0.5f, 0.5f, 0.5f);   glVertex3f(-0.5f, 0.5f, -0.5f);
+    glVertex3f(0.5f, -0.5f, -0.5f); glVertex3f(0.5f, 0.5f, -0.5f);
+    glVertex3f(0.5f, 0.5f, 0.5f);   glVertex3f(0.5f, -0.5f, 0.5f);
+    glVertex3f(-0.5f, 0.5f, -0.5f); glVertex3f(-0.5f, 0.5f, 0.5f);
+    glVertex3f(0.5f, 0.5f, 0.5f);   glVertex3f(0.5f, 0.5f, -0.5f);
+    glVertex3f(-0.5f, -0.5f, -0.5f); glVertex3f(0.5f, -0.5f, -0.5f);
+    glVertex3f(0.5f, -0.5f, 0.5f);   glVertex3f(-0.5f, -0.5f, 0.5f);
     glEnd();
     glPopMatrix();
 }
@@ -84,19 +84,46 @@ int main() {
     std::cout << "hello\n"; 
 
     Particle projectile1;
-    projectile1.setPosition(Vector3(-10,20,0));
+    projectile1.setPosition(Vector3(-10,10,0));
     projectile1.setMass(2.0f);
     projectile1.setVelocity(Vector3(0,0,0));
     projectile1.setDamping(0.99f);
     projectile1.clearAccumulator();
+
+    Particle projectile2;
+    projectile2.setPosition(Vector3(-20,0,0));
+    projectile2.setMass(2.0f);
+    projectile2.setVelocity(Vector3(3,0,0));
+    projectile2.setDamping(0.99f);
+    projectile2.clearAccumulator();
+
+    Particle projectile3;
+    projectile3.setPosition(Vector3(0,0,0));
+    projectile3.setMass(50.0f);
+    projectile3.setVelocity(Vector3(-0.2f,0,0));
+    projectile3.setDamping(0.99f);
+    projectile3.clearAccumulator();
     
-    world.addParticle(&projectile1);
-
+    Particles particleList;
+    particleList.push_back(&projectile1);
+    particleList.push_back(&projectile2);
+    particleList.push_back(&projectile3);
+    
     ParticleGravity gravity(Vector3(0, -9.81f, 0));
-    registry.add(&projectile1, &gravity);
+    
+    for(Particles::iterator p=particleList.begin(); p!=particleList.end(); p++){
+        world.addParticle(*p);
 
-    GroundContact groundContact(&projectile1, 0.6f);
+        registry.add(*p, &gravity);
+    }
+
+    GroundContact groundContact;
+    groundContact.init(&particleList, 0.6f);
+    ParticleCollisionContact collision;
+    collision.init(&particleList, 0.8f, 0.5f);
+    
     world.addContactGenerator(&groundContact);
+    world.addContactGenerator(&collision);
 
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -110,7 +137,7 @@ int main() {
         world.runPhysics(dt);
         timeSinceStart += dt;
         Vector3 pos = projectile1.getPosition();
-        std::cout << "t=" << timeSinceStart << " y=" << pos.y << "\n";
+        Vector3 vel = projectile1.getVelocity();
 
         glColor3f(1.0f, 0.2f, 0.2f);
 
@@ -131,6 +158,8 @@ int main() {
 
         glColor3f(0.5f, 0.6f, 0.2f);
         drawCube(projectile1.position.x, projectile1.position.y, projectile1.position.z);
+        drawCube(projectile2.position.x, projectile2.position.y, projectile2.position.z);
+        drawCube(projectile3.position.x, projectile3.position.y, projectile3.position.z);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

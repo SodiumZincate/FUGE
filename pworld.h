@@ -4,29 +4,31 @@
 #include "pfgen.h"
 #include "pcontacts.h"
 #include "particle.h"
+#include <vector>
 
 namespace cyclone {
+    typedef std::vector<Particle*> Particles;
     class ParticleWorld {
         struct ParticleRegistration {
             Particle* particle;
             ParticleRegistration* next;
         };
-
+        
         ParticleRegistration* firstParticle = nullptr;
         ParticleForceRegistry registry;
         ParticleContactResolver resolver;
-
+        
         struct ContactGenRegistration {
             ParticleContactGenerator* gen;
             ContactGenRegistration* next;
         };
-
+        
         ContactGenRegistration* firstContactGen = nullptr;
-
+        
         ParticleContact* contacts = nullptr;
         unsigned maxContacts = 0;
         bool calculateIterations = false;
-
+        
     public:
         ParticleWorld(unsigned maxContacts, unsigned iterations = 0);
 
@@ -44,11 +46,21 @@ namespace cyclone {
 
     // Ground contact with full definition
     class GroundContact : public ParticleContactGenerator {
-    public:
-        GroundContact(Particle* p, real res) : particle(p), restitution(res) {}
-        virtual unsigned addContact(ParticleContact* contact, unsigned limit) const override;
-    private:
-        Particle* particle;
-        real restitution;
+        public:
+            void init(Particles* p, real res);
+            virtual unsigned addContact(ParticleContact* contact, unsigned limit) const override;
+        private:
+            Particles* particles;
+            real restitution;
     };
-}
+
+    class ParticleCollisionContact : public ParticleContactGenerator {
+        public:
+            void init(Particles* p, real res, real radius);
+            virtual unsigned addContact(ParticleContact* contact, unsigned limit) const override;
+        private:
+            Particles* particles;
+            real restitution;
+            real radius;
+    };
+};

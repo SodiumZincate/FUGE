@@ -58,7 +58,7 @@ void ParticleContact::resolveVelocity(real duration){
 
     particle[0]->setVelocity(particle[0]->getVelocity()+impulsePerUnitMass*particle[0]->getInverseMass());
     if(particle[1]){
-        particle[1]->setVelocity(particle[1]->getVelocity()+impulsePerUnitMass*-particle[0]->getInverseMass());
+        particle[1]->setVelocity(particle[1]->getVelocity()-impulsePerUnitMass*particle[1]->getInverseMass());
     }
 }
 
@@ -80,10 +80,7 @@ void ParticleContact::resolveInterpenetration(real duration){
     }
 }
 
-void ParticleContactResolver::resolveContacts(ParticleContact *contactArray,
-                                              unsigned numContacts,
-                                              real duration)
-{
+void ParticleContactResolver::resolveContacts(ParticleContact *contactArray, unsigned numContacts, real duration){
     unsigned i;
 
     iterationsUsed = 0;
