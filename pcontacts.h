@@ -1,36 +1,38 @@
 #pragma once
 #include "precision.h"
 #include "core.h"
-#include "pworld.h"
+#include "pfgen.h"
+#include "particle.h"
 
-class ParticleContact{
+namespace cyclone {
+    class ParticleContact {
     public:
         Particle* particle[2];
         real restitution;
         Vector3 contactNormal;
         real penetration;
+        Vector3 particleMovement[2];
 
-    protected:
         void resolve(real duration);
-        real calculateSeperatingVelocity() const;
+        real calculateSeparatingVelocity() const;
 
     private:
         void resolveVelocity(real duration);
         void resolveInterpenetration(real duration);
-};
+    };
 
-class ParticleContactResolver
-{
+    class ParticleContactResolver {
     protected:
-    unsigned iterations;
-    unsigned iterationsUsed;
+        unsigned iterations;
+        unsigned iterationsUsed;
     public:
-        ParticleContactResolver(unsigned iterations);
+        ParticleContactResolver(unsigned iterations = 0);
         void setIterations(unsigned iterations);
-        void resolveContacts(ParticleContact *contactArray, unsigned numContacts, real duration);
-};
+        void resolveContacts(ParticleContact* contactArray, unsigned numContacts, real duration);
+    };
 
-class ParticleContactGenerator{
+    class ParticleContactGenerator {
     public:
-        virutal unsigned addContact(ParticleContact *contact, unsigned limit) const = 0;
-};
+        virtual unsigned addContact(ParticleContact* contact, unsigned limit) const = 0;
+    };
+}

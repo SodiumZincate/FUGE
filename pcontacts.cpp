@@ -1,10 +1,21 @@
+#include "particle.h"
 #include "pcontacts.h"
+#include <iostream>
+
+using namespace cyclone;
+
+ParticleContactResolver::ParticleContactResolver(unsigned iters)
+: iterations(iters), iterationsUsed(0) {}
+
+void ParticleContactResolver::setIterations(unsigned iters){
+    iterations = iters;
+}
 
 void ParticleContact::resolve(real duration){
     resolveVelocity(duration);
 }
 
-void ParticleContact::calculateSeperatingVelocity() const{
+real ParticleContact::calculateSeparatingVelocity() const{
     Vector3 relativeVelocity = particle[0]->getVelocity();
     if(particle[1]){
         relativeVelocity -= particle[1]->getVelocity();
@@ -13,31 +24,31 @@ void ParticleContact::calculateSeperatingVelocity() const{
 }
 
 void ParticleContact::resolveVelocity(real duration){
-    real seperatingVelocity = calculateSeperatingVelocity();
+    real separatingVelocity = calculateSeparatingVelocity();
 
-    if(seperatingVelocity > 0){
+    if(separatingVelocity > 0){
         return;
     }
 
-    real newSeperatingVelocity = -seperatingVelocity * restitution;
+    real newSeparatingVelocity = -separatingVelocity * restitution;
 
     Vector3 accCausedVelocity = particle[0]->getAcceleration();
     if(particle[1]){
         accCausedVelocity -= particle[1]->getAcceleration();
     }
-    real accCausedSeperatingVelocity = accCausedVelocity * contactNormal * duration;
-    if (accCausedSeperatingVelocity < 0){
-        newSeperatingVelocity += restitution * accCausedSeperatingVelocity;
-        if(newSeperatingVelocity < 0){
-            newSeperatingVelocity = 0;
+    real accCausedSeparatingVelocity = accCausedVelocity * contactNormal * duration;
+    if (accCausedSeparatingVelocity < 0){
+        newSeparatingVelocity += restitution * accCausedSeparatingVelocity;
+        if(newSeparatingVelocity < 0){
+            newSeparatingVelocity = 0;
         }
     }
     
-    real deltaVelocity = newSeperatingVelocity - seperatingVelocity;
+    real deltaVelocity = newSeparatingVelocity - separatingVelocity;
 
     real totalInverseMass = particle[0]->getInverseMass();
     if(particle[1]){
-        totalInverseMass += particle[1].getInverseMass();
+        totalInverseMass += particle[1]->getInverseMass();
     }
 
     if(totalInverseMass <= 0) return;
@@ -47,41 +58,82 @@ void ParticleContact::resolveVelocity(real duration){
 
     particle[0]->setVelocity(particle[0]->getVelocity()+impulsePerUnitMass*particle[0]->getInverseMass());
     if(particle[1]){
-        particle[1]->setVelocity(particle[1]->getVelocity()+impulsePerUnitMass*-particle[0]->getInverseMass())
+        particle[1]->setVelocity(particle[1]->getVelocity()+impulsePerUnitMass*-particle[0]->getInverseMass());
     }
 }
 
-void ParticleCOntact::resolveInterpenetration(real duration){
+void ParticleContact::resolveInterpenetration(real duration){
     if(penetration <= 0) return;
 
     real totalInverseMass = particle[0]->getInverseMass();
     if(particle[1]){
-        totalInverseMass += particle[1].getInverseMass();
+        totalInverseMass += particle[1]->getInverseMass();
     }
 
     if(totalInverseMass <= 0) return;
 
     Vector3 movePerUnitMass = contactNormal * -(penetration/totalInverseMass);
 
-    particle[0]->setPosition(particle[0]->getPosition()+movePerUnitMass/particle[0]->getInverseMass);
+    particle[0]->setPosition(particle[0]->getPosition()+movePerUnitMass/particle[0]->getInverseMass());
     if(particle[1]){
-        particle[1]->setPosition(particle[1]->getPosition()+movePerUnitMass/particle[1]->getInverseMass);
+        particle[1]->setPosition(particle[1]->getPosition()+movePerUnitMass/(particle[1]->getInverseMass()));
     }
 }
 
-void ParticleContactResolver::resolveContacts(ParticleContact *contactArray, unsigned numContacts, real duration){
+void ParticleContactResolver::resolveContacts(ParticleContact *contactArray,
+                                              unsigned numContacts,
+                                              real duration)
+{
+    unsigned i;
+
     iterationsUsed = 0;
-    while(iterationsUsed < iterations){
-        real max = 0;
+    while(iterationsUsed < iterations)
+    {
+        // Find the contact with the largest closing velocity;
+        real max = REAL_MAX;
         unsigned maxIndex = numContacts;
-        for (unsigned i = 0; i < numContacts; i++){
+        for (i = 0; i < numContacts; i++)
+        {
             real sepVel = contactArray[i].calculateSeparatingVelocity();
-            if (sepVel < max){
+            if (sepVel < max &&
+                (sepVel < 0 || contactArray[i].penetration > 0))
+            {
                 max = sepVel;
                 maxIndex = i;
             }
         }
+
+        // Do we have anything worth resolving?
+        if (maxIndex == numContacts) break;
+
+        // Resolve this contact
         contactArray[maxIndex].resolve(duration);
+
+        // Update the interpenetrations for all particles
+        Vector3 *move = contactArray[maxIndex].particleMovement;
+        for (i = 0; i < numContacts; i++)
+        {
+            if (contactArray[i].particle[0] == contactArray[maxIndex].particle[0])
+            {
+                contactArray[i].penetration -= move[0] * contactArray[i].contactNormal;
+            }
+            else if (contactArray[i].particle[0] == contactArray[maxIndex].particle[1])
+            {
+                contactArray[i].penetration -= move[1] * contactArray[i].contactNormal;
+            }
+            if (contactArray[i].particle[1])
+            {
+                if (contactArray[i].particle[1] == contactArray[maxIndex].particle[0])
+                {
+                    contactArray[i].penetration += move[0] * contactArray[i].contactNormal;
+                }
+                else if (contactArray[i].particle[1] == contactArray[maxIndex].particle[1])
+                {
+                    contactArray[i].penetration += move[1] * contactArray[i].contactNormal;
+                }
+            }
+        }
+
         iterationsUsed++;
     }
 }

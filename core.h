@@ -44,6 +44,10 @@ namespace cyclone{
 				return Vector3(x*value, y*value, z*value);
 			}
 
+            Vector3 operator/(const real value) const{
+                return Vector3(x/value, y/value, z/value);
+            }
+
 			void operator+=(const Vector3 &v){
 				x += v.x;
 				y += v.y;

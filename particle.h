@@ -30,5 +30,7 @@ class Particle{
         Vector3 getVelocity();
         void getVelocity(Vector3* v);
         void setAcceleration(const Vector3 &v);
+        Vector3 getAcceleration();
+        void getAcceleration(Vector3 *v);
         void setDamping(const real damping);
 };
