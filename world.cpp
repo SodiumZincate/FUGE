@@ -93,21 +93,29 @@ int main() {
     Particle projectile2;
     projectile2.setPosition(Vector3(-20,0,0));
     projectile2.setMass(2.0f);
-    projectile2.setVelocity(Vector3(3,0,0));
+    projectile2.setVelocity(Vector3(100,0,0));
     projectile2.setDamping(0.99f);
     projectile2.clearAccumulator();
 
     Particle projectile3;
     projectile3.setPosition(Vector3(0,0,0));
-    projectile3.setMass(50.0f);
-    projectile3.setVelocity(Vector3(-0.2f,0,0));
+    projectile3.setMass(500.0f);
+    projectile3.setVelocity(Vector3(-2.0f,0,0));
     projectile3.setDamping(0.99f);
     projectile3.clearAccumulator();
     
+    Particle projectile4;
+    projectile4.setPosition(Vector3(-30,0,0));
+    projectile4.setMass(500.0f);
+    projectile4.setVelocity(Vector3(2.0f,0,0));
+    projectile4.setDamping(0.99f);
+    projectile4.clearAccumulator();
+
     Particles particleList;
     particleList.push_back(&projectile1);
     particleList.push_back(&projectile2);
     particleList.push_back(&projectile3);
+    particleList.push_back(&projectile4);
     
     ParticleGravity gravity(Vector3(0, -9.81f, 0));
     
@@ -125,6 +133,9 @@ int main() {
     world.addContactGenerator(&groundContact);
     world.addContactGenerator(&collision);
 
+    double lastTime = glfwGetTime();
+    const double physicsDt = 0.001; // 1 ms physics step
+    double accumulator = 0.0;
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -132,10 +143,25 @@ int main() {
             
         }
 
-        float dt = 0.016f; // ~60 FPS
-        registry.updateForces(dt);
-        world.runPhysics(dt);
-        timeSinceStart += dt;
+        
+        double currentTime = glfwGetTime();
+        double deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+        
+        accumulator += deltaTime;
+        
+        while (accumulator >= physicsDt) {
+            timeSinceStart += physicsDt;
+            registry.updateForces(physicsDt);
+            world.runPhysics(physicsDt);
+            accumulator -= physicsDt;
+        }
+
+        // Render current positions directly
+        for (Particle* p : particleList) {
+            drawCube(p->getPosition().x, p->getPosition().y, p->getPosition().z);
+        }
+        
         Vector3 pos = projectile1.getPosition();
         Vector3 vel = projectile1.getVelocity();
 
@@ -157,9 +183,6 @@ int main() {
         glEnd();
 
         glColor3f(0.5f, 0.6f, 0.2f);
-        drawCube(projectile1.position.x, projectile1.position.y, projectile1.position.z);
-        drawCube(projectile2.position.x, projectile2.position.y, projectile2.position.z);
-        drawCube(projectile3.position.x, projectile3.position.y, projectile3.position.z);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
