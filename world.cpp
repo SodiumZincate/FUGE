@@ -9,7 +9,7 @@
 
 float timeSinceStart = 0.0f;
 
-// Draw a cube (unchanged)
+// Draw a cube
 void drawCube(float x, float y, float z) {
     glPushMatrix();
     glTranslatef(x, y, z);
@@ -30,7 +30,7 @@ void drawCube(float x, float y, float z) {
     glPopMatrix();
 }
 
-// lookAt and perspective functions (unchanged)
+// lookAt and perspective functions
 void lookAt(const Vector3 &eye, const Vector3 &center, const Vector3 &up, float m[16]) {
     Vector3 f = center - eye; f.normalize();
     Vector3 s = f.vectorProduct(up); s.normalize();
